@@ -1,0 +1,10 @@
+# Ignore application.conf file
+src/main/resources/application.conf
+
+# Ignore target directories
+target
+project/target
+
+# Ignore Intellij Idea stuff
+.idea
+
