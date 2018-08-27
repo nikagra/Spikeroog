@@ -1,17 +1,17 @@
 package com.mikitahradovich.spikeroog.air
 
 import java.awt.Color
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.{Instant, LocalDate, ZoneId}
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.{Http, HttpExt}
+import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import com.google.inject.Inject
-import com.mikitahradovich.spikeroog.common.FileReader
+import com.mikitahradovich.spikeroog.common.{CommonUtils, FileReader}
 import com.typesafe.config.Config
 import org.apache.logging.log4j.scala.Logging
 import org.javacord.api.entity.message.embed.EmbedBuilder
@@ -62,9 +62,9 @@ class AirQualityListener @Inject()(
       val responseFuture: Future[HttpResponse] = http.singleRequest(prepareRequest())
 
       responseFuture.onComplete {
-        case Success(res) =>
+        case Success(response) =>
 
-          val responseAsString: Future[String] = Unmarshal(res.entity).to[String]
+          val responseAsString: Future[String] = Unmarshal(response.entity).to[String]
           responseAsString.onComplete {
             case Success(value) =>
               logger.debug(s"Received response from WIOŚ with body $value")
@@ -73,12 +73,14 @@ class AirQualityListener @Inject()(
               if (result.success) {
                 val data = processResponseData(result, indexGrouped)
 
-                val embed: EmbedBuilder = prepareResponseMessage(result, data)
-                event.getMessage.getAuthor.asUser().ifPresent(u => u.sendMessage(embed))
+                if (data.isDefined) {
+                  val embed: EmbedBuilder = prepareResponseMessage(result, data.get)
+                  event.getMessage.getAuthor.asUser().ifPresent(u => u.sendMessage(embed))
+                } else {
+                  respondWithErrorMessage(event)
+                }
               } else {
-                new EmbedBuilder()
-                  .setColor(Color.decode("#7E0023"))
-                  .setTitle("Nie mogę pobrać danych. Przepraszam :bow:")
+                respondWithErrorMessage(event)
               }
             case Failure(ex) => logger.error(s"Something wrong (${ex.getMessage})")
           }
@@ -134,7 +136,7 @@ class AirQualityListener @Inject()(
           timestamp = x._1,
           value = x._5,
           indexEntry = groupedIndex(x._2).collectFirst { case i if i.value < x._5 => i }.get))))
-      .maxBy(_._1)
+      .reduceOption(Ordering.by((_: (Long, List[ReportEntry]))._1).max)
   }
 
   private def prepareResponseMessage(result: Result, data: (Long, List[ReportEntry])) = {
@@ -142,9 +144,16 @@ class AirQualityListener @Inject()(
       .setTitle(result.data.title)
       .setColor(data._2.maxBy(_.indexEntry.categoryId).indexEntry.color)
       .setUrl("http://air.wroclaw.pios.gov.pl/dane-pomiarowe/automatyczne/stacja/13/parametry/wszystkie")
-    embed.addField("Czas pomiaru", Instant.ofEpochSecond(data._1).atZone(ZoneId.systemDefault()).toLocalDateTime.format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")))
+    embed.addField("Czas pomiaru", CommonUtils.millisToFormattedDate(data._1, "HH:mm dd/MM/yyyy"))
     data._2.foreach(m => embed.addField(m.paramLabel, f"${m.value}%1.1f ${m.unit} (${m.indexEntry.categoryName})"))
     embed
+  }
+
+  private def respondWithErrorMessage(event: MessageCreateEvent) = {
+    val embed = new EmbedBuilder()
+      .setColor(Color.decode("#7E0023"))
+      .setTitle("Nie mogę pobrać danych. Przepraszam :bow:")
+    event.getMessage.getAuthor.asUser().ifPresent(u => u.sendMessage(embed))
   }
 
 }

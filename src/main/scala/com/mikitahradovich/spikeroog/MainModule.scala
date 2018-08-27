@@ -7,6 +7,7 @@ import com.google.inject
 import com.google.inject.{AbstractModule, Provides}
 import com.mikitahradovich.spikeroog.air.AirQualityListener
 import com.mikitahradovich.spikeroog.common.FileReader
+import com.mikitahradovich.spikeroog.releases.ReleasesListener
 import com.typesafe.config.{Config, ConfigFactory}
 import net.codingwell.scalaguice.ScalaModule
 
@@ -42,5 +43,14 @@ class MainModule extends AbstractModule with ScalaModule {
                             actorMaterializer: ActorMaterializer,
                             executionContext: ExecutionContext): AirQualityListener =
     new AirQualityListener(config, fileReader, Http())
+
+  @Provides
+  @inject.Singleton
+  def getReleasesListener(config: Config,
+                            fileReader: FileReader)(
+                             implicit actorSystem: ActorSystem,
+                             actorMaterializer: ActorMaterializer,
+                             executionContext: ExecutionContext): ReleasesListener =
+    new ReleasesListener(config, fileReader, Http())
 
 }
