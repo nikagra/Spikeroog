@@ -70,14 +70,18 @@ class ReleasesListener @Inject()(
                       val releasesGrouped = processReleasesResponse(releases).filter(r => gamesGrouped.get(r._1.left.get).isDefined)
 
                       val embed = prepareReleasesReport(releasesGrouped, gamesGrouped)
-                      event.getMessage.getAuthor.asUser().ifPresent(u => u.sendMessage(embed))
+                      CommonUtils.respond(event, embed)
                     case Failure(ex) =>
-                      ex.printStackTrace()
                       logger.error(s"Something went wrong (${ex.getMessage})")
+                      CommonUtils.respondWithErrorMessage(event, "Coś poszło nie tak. Przepraszam :bow:")
                   }
+              case Failure(ex) =>
+                logger.error(s"Something went wrong (${ex.getMessage})")
+                CommonUtils.respondWithErrorMessage(event, "Nie mogę pobrać danych. Przepraszam :bow:")
             }
           case Failure(ex) =>
-            event.getMessage.getAuthor.asUser().ifPresent(u => u.sendMessage(s"Something went wrong (${ex.getMessage})"))
+            logger.error(s"Something went wrong (${ex.getMessage})")
+            CommonUtils.respondWithErrorMessage(event, "Nie mogę pobrać danych. Przepraszam :bow:")
         }
     }
   }

@@ -75,16 +75,20 @@ class AirQualityListener @Inject()(
 
                 if (data.isDefined) {
                   val embed: EmbedBuilder = prepareResponseMessage(result, data.get)
-                  event.getMessage.getAuthor.asUser().ifPresent(u => u.sendMessage(embed))
+                  CommonUtils.respond(event, embed)
                 } else {
                   respondWithErrorMessage(event)
                 }
               } else {
                 respondWithErrorMessage(event)
               }
-            case Failure(ex) => logger.error(s"Something wrong (${ex.getMessage})")
+            case Failure(ex) =>
+              logger.error(s"Something wrong (${ex.getMessage})")
+              respondWithErrorMessage(event)
           }
-        case Failure(ex) => logger.error(s"Something wrong (${ex.getMessage})")
+        case Failure(ex) =>
+          logger.error(s"Something wrong (${ex.getMessage})")
+          respondWithErrorMessage(event)
       }
     }
   }
@@ -124,8 +128,11 @@ class AirQualityListener @Inject()(
 
   private def processResponseData(result: Result, groupedIndex: Map[String, Stream[IndexEntry]]) = {
     result.data.series
-      .filter(s => s.aggType.equals("A1h"))
-      .flatMap(s => s.data.map { case ts :: v :: Nil => (ts.toLong, s.paramId, s.paramLabel, s.unit, v.toFloat) })
+      .filter(s => s.aggType.equals("A1h") && s.data.forall(_.size == 2))
+      .flatMap(s => s.data.map {
+        case ts :: v :: Nil => (ts.toLong, s.paramId, s.paramLabel, s.unit, v.toFloat)
+        case _ => throw new IllegalArgumentException
+      })
       .groupBy(_._1)
       .toList
       .map(e =>
@@ -136,7 +143,7 @@ class AirQualityListener @Inject()(
           timestamp = x._1,
           value = x._5,
           indexEntry = groupedIndex(x._2).collectFirst { case i if i.value < x._5 => i }.get))))
-      .reduceOption(Ordering.by((_: (Long, List[ReportEntry]))._1).max)
+      .reduceOption(Ordering.by((_: (Long, List[ReportEntry]))._1).max(_, _))
   }
 
   private def prepareResponseMessage(result: Result, data: (Long, List[ReportEntry])) = {
@@ -150,11 +157,7 @@ class AirQualityListener @Inject()(
   }
 
   private def respondWithErrorMessage(event: MessageCreateEvent) = {
-    val embed = new EmbedBuilder()
-      .setColor(Color.decode("#7E0023"))
-      .setTitle("Nie mogę pobrać danych. Przepraszam :bow:")
-    event.getMessage.getAuthor.asUser().ifPresent(u => u.sendMessage(embed))
+    CommonUtils.respondWithErrorMessage(event, "Nie mogę pobrać danych. Przepraszam :bow:")
   }
-
 }
 
