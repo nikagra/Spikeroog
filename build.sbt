@@ -1,4 +1,5 @@
 import NativePackagerHelper._
+import com.typesafe.sbt.packager.docker.Cmd
 
 enablePlugins(JavaAppPackaging, DockerPlugin)
 
@@ -15,14 +16,14 @@ libraryDependencies ++= Seq(
   "net.codingwell" %% "scala-guice" % "4.2.1",
 
   // JSON Support
-  "io.spray" %%  "spray-json" % "1.3.4",
+  "io.spray" %% "spray-json" % "1.3.4",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.6",
 
   // CSV
   "com.github.tototoshi" %% "scala-csv" % "1.3.5",
 
   // Akka Http dependencies
-  "com.typesafe.akka" %% "akka-http"   % "10.1.3",
+  "com.typesafe.akka" %% "akka-http" % "10.1.3",
   "com.typesafe.akka" %% "akka-stream" % "2.5.12",
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.4",
 
@@ -42,11 +43,17 @@ libraryDependencies ++= Seq(
 packageName in Docker := packageName.value
 version in Docker := version.value
 
+dockerCommands ++= Seq(
+  Cmd("USER", "root"),
+  Cmd("RUN", "apk", "--no-cache", "add", "bash"),
+  Cmd("USER", "daemon")
+)
+
 dockerExposedPorts := List(8001)
 dockerRepository := Some("nikagra")
 dockerLabels := Map("maintainer" -> "nikagra@gmail.com")
 
-dockerBaseImage := "openjdk"
+dockerBaseImage := "openjdk:8-jre-alpine"
 defaultLinuxInstallLocation in Docker := "/usr/local"
 daemonUser in Docker := "daemon"
-mappings in Universal ++= directory( baseDirectory.value / "src" / "main" / "resources" )
+mappings in Universal ++= directory(baseDirectory.value / "src" / "main" / "resources")
