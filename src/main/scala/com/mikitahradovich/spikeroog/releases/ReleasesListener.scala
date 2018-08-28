@@ -65,7 +65,6 @@ class ReleasesListener @Inject()(
                 fetchGamesForReleases(releases)
                   .onComplete {
                     case Success(games) =>
-                      println(games)
                       val gamesGrouped = games.filter(t => t.isSuccess).map(_.get).groupBy(_.id)
                       val releasesGrouped = processReleasesResponse(releases).filter(r => gamesGrouped.get(r._1.left.get).isDefined)
 
