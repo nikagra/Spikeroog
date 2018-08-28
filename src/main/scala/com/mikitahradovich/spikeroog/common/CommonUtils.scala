@@ -1,9 +1,28 @@
 package com.mikitahradovich.spikeroog.common
 
-import java.time.{Instant, ZoneId}
+import java.awt.Color
 import java.time.format.DateTimeFormatter
+import java.time.{Instant, ZoneId}
+
+import org.javacord.api.entity.message.embed.EmbedBuilder
+import org.javacord.api.event.message.MessageCreateEvent
 
 object CommonUtils {
   def millisToFormattedDate(millis: Long, format: String = "dd/MM/yyyy") =
-    Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate.format(DateTimeFormatter.ofPattern(format))
+    Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime.format(DateTimeFormatter.ofPattern(format))
+
+  def respondWithErrorMessage(event: MessageCreateEvent, content: String) = {
+    val embed = new EmbedBuilder()
+      .setColor(Color.decode("#7E0023"))
+      .setTitle(content)
+    CommonUtils.respond(event, embed)
+  }
+
+  def respond(event: MessageCreateEvent, embed: EmbedBuilder) = {
+    if (event.getMessage.getChannel.canYouWrite) {
+      event.getMessage.getChannel.sendMessage(embed)
+    } else {
+      event.getMessage.getAuthor.asUser().ifPresent(u => u.sendMessage(embed))
+    }
+  }
 }
