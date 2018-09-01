@@ -1,6 +1,7 @@
 package com.mikitahradovich.spikeroog.releases
 
 import java.awt.Color
+import java.time._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
@@ -62,7 +63,8 @@ class ReleasesListener @Inject()(
                 logger.debug(s"Received releases response with body $value")
                 val releases: List[Release] = value.parseJson.convertTo[List[Release]]
 
-                fetchGamesForReleases(releases)
+                val gameIds = getGameIdsToFetch(releases)
+                fetchGamesForReleases(gameIds)
                   .onComplete {
                     case Success(games) =>
                       val gamesGrouped = games.filter(t => t.isSuccess).map(_.get).groupBy(_.id)
@@ -85,10 +87,13 @@ class ReleasesListener @Inject()(
     }
   }
 
-  private def fetchGamesForReleases(releases: List[Release]) = {
+  private def getGameIdsToFetch(releases: List[Release]) = {
+    releases.filter(_.game.isLeft).map(_.game.left.get).distinct
+  }
+
+  private def fetchGamesForReleases(releases: List[Long]) = {
     Future.sequence(releases
-      .filter(_.game.isLeft)
-      .map(v => http.singleRequest(prepareGameRequest(v.game.left.get)))
+      .map(id => http.singleRequest(prepareGameRequest(id)))
       .map(v => v.flatMap(r => Unmarshal(r.entity).to[String]))
       .map(v => {
         v.map(s => s.parseJson.convertTo[List[Game]])
@@ -119,7 +124,7 @@ class ReleasesListener @Inject()(
         .withQuery(Query(
           ("fields", "game,game.name,platform,date"),
           ("order", "date:asc"),
-          ("filter[date][gt]", System.currentTimeMillis().toString),
+          ("filter[date][gt]", CommonUtils.startOfTheDayMillis.toString),
           ("filter[platform][any]", groupedPlatforms.keySet.map(_.toString).reduceLeft((acc, p) => s"$acc,$p")),
           ("limit", "10")))
     ).withHeaders(RawHeader("user-key", token), RawHeader("Accept", MediaTypes.`application/json`.toString()))
