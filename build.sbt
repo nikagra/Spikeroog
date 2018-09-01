@@ -1,11 +1,11 @@
 import NativePackagerHelper._
 import com.typesafe.sbt.packager.docker.Cmd
 
-enablePlugins(JavaAppPackaging, DockerPlugin)
+enablePlugins(JavaServerAppPackaging, DockerPlugin)
 
 name := "spikeroog"
 
-version := "0.1"
+version := "0.1.1"
 
 scalaVersion := "2.12.6"
 
@@ -39,6 +39,15 @@ libraryDependencies ++= Seq(
   "org.scalamock" %% "scalamock" % "4.1.0" % Test
 )
 
+// Universal configuration
+javaOptions in Universal ++= Seq(
+  "-Dconfig.file=conf/production.conf",
+  "-Dlog4j.configurationFile=conf/log4j2-prod.yaml"
+)
+mappings in Universal ++= {
+  directory(baseDirectory.value / "src" / "main" / "resources")
+}
+
 // Docker configuration
 packageName in Docker := packageName.value
 version in Docker := version.value
@@ -56,4 +65,3 @@ dockerLabels := Map("maintainer" -> "nikagra@gmail.com")
 dockerBaseImage := "openjdk:8-jre-alpine"
 defaultLinuxInstallLocation in Docker := "/usr/local"
 daemonUser in Docker := "daemon"
-mappings in Universal ++= directory(baseDirectory.value / "src" / "main" / "resources")
