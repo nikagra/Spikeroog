@@ -1,0 +1,28 @@
+Configuration:
+  name: Spikeroog
+  status: warn
+  Properties:
+    Property:
+      name: filename
+      value: target/log/spikeroog.log
+  Appenders:
+    Console:
+      name: ConsoleAppender
+      PatternLayout:
+        Pattern: "[%-5level] %d{HH:mm:ss.SSS} [%t] %c{1.} - %msg%n"
+      Filters:
+        ThresholdFilter:
+          level: debug
+    File:
+      name: FileAppender
+      fileName: ${filename}
+      PatternLayout:
+        Pattern: "[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1.} - %msg%n"
+      Filters:
+        ThresholdFilter:
+          level: warn
+  Loggers:
+    Root:
+      level: info
+      AppenderRef:
+      - ref: FileAppender

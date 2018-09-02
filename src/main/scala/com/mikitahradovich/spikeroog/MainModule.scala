@@ -7,6 +7,7 @@ import com.google.inject
 import com.google.inject.{AbstractModule, Provides}
 import com.mikitahradovich.spikeroog.air.AirQualityListener
 import com.mikitahradovich.spikeroog.common.FileReader
+import com.mikitahradovich.spikeroog.misc.EchoListener
 import com.mikitahradovich.spikeroog.releases.ReleasesListener
 import com.typesafe.config.{Config, ConfigFactory}
 import net.codingwell.scalaguice.ScalaModule
@@ -18,6 +19,8 @@ class MainModule extends AbstractModule with ScalaModule {
   override def configure(): Unit = {
     bind[ActorSystem].toInstance(ActorSystem())
     bind[FileReader]
+
+    bind[EchoListener]
   }
 
   @Provides

@@ -2,11 +2,12 @@ package com.mikitahradovich.spikeroog
 
 import com.google.inject.Guice
 import com.mikitahradovich.spikeroog.air.AirQualityListener
+import com.mikitahradovich.spikeroog.misc.EchoListener
 import com.mikitahradovich.spikeroog.releases.ReleasesListener
 import com.typesafe.config.Config
+import net.codingwell.scalaguice.InjectorExtensions._
 import org.apache.logging.log4j.scala.Logging
 import org.javacord.api.DiscordApiBuilder
-import net.codingwell.scalaguice.InjectorExtensions._
 
 object Spikeroog extends App with Logging {
 
@@ -24,9 +25,8 @@ object Spikeroog extends App with Logging {
 
   logger.info("Successfully logged in. Registering listeners...")
 
-  api.addMessageCreateListener(event =>
-    if (event.getMessage.getContent.startsWith("!echo")) event.getChannel.sendMessage(event.getMessage.getContent.stripPrefix("!echo").trim)
-  )
+  val echoListener = injector.instance[EchoListener]
+  api.addMessageCreateListener(echoListener)
 
   val airQualityListener = injector.instance[AirQualityListener]
   api.addMessageCreateListener(airQualityListener)

@@ -151,7 +151,7 @@ class AirQualityListener @Inject()(
       .setTitle(result.data.title)
       .setColor(data._2.maxBy(_.indexEntry.categoryId).indexEntry.color)
       .setUrl("http://air.wroclaw.pios.gov.pl/dane-pomiarowe/automatyczne/stacja/13/parametry/wszystkie")
-    embed.addField("Czas pomiaru", CommonUtils.millisToFormattedDate(data._1, "HH:mm dd/MM/yyyy"))
+    embed.addField("Czas pomiaru", CommonUtils.secondsToFormattedDate(data._1, "HH:mm dd/MM/yyyy"))
     data._2.foreach(m => embed.addField(m.paramLabel, f"${m.value}%1.1f ${m.unit} (${m.indexEntry.categoryName})"))
     embed
   }

@@ -1,5 +1,6 @@
 # Ignore application.conf file
-src/main/resources/application.conf
+src/universal/conf/application.conf
+src/universal/conf/production.conf
 
 # Ignore target directories
 target
