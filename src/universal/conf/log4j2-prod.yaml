@@ -4,7 +4,7 @@ Configuration:
   Properties:
     Property:
       name: filename
-      value: target/log/spikeroog.log
+      value: /var/log/spikeroog.log
   Appenders:
     Console:
       name: ConsoleAppender
