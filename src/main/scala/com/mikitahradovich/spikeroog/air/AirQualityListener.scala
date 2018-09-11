@@ -142,7 +142,8 @@ class AirQualityListener @Inject()(
           unit = x._4,
           timestamp = x._1,
           value = x._5,
-          indexEntry = groupedIndex(x._2).collectFirst { case i if i.value < x._5 => i }.get))))
+          indexEntry = groupedIndex(x._2)
+            .collectFirst { case i if i.value <= x._5 => i }.get))))
       .reduceOption(Ordering.by((_: (Long, List[ReportEntry]))._1).max(_, _))
   }
 
